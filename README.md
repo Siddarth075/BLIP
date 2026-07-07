@@ -4,6 +4,9 @@ A Flask-based web application featuring speech processing and image upload capab
 
 ## 🛠️ Project Structure
 
+<img width="399" height="510" alt="Screenshot 2026-07-07 193244" src="https://github.com/user-attachments/assets/7c418659-c5a4-4f86-872e-73f6d3fb18bb" />
+
+
 Based on the repository layout, here is the organizational structure:
 
 *   `app.py` - Main Flask application routing and logic.
@@ -27,6 +30,7 @@ Based on the repository layout, here is the organizational structure:
 *   `pip` (Python package installer)
 
 ### Installation
+
 
 1. Clone this repository to your local machine:
    ```bash
