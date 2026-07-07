@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>VisionIQ AI</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+
+<script src="{{ url_for('static',filename='js/speech.js') }}"></script>
+
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+
+<div class="container">
+
+<a class="navbar-brand fw-bold">
+
+VisionIQ AI
+
+</a>
+
+<div>
+
+<a href="/history" class="btn btn-warning">
+
+History
+
+</a>
+
+<a href="/download" class="btn btn-success">
+
+Download PDF
+
+</a>
+
+</div>
+
+</div>
+
+</nav>
+
+<div class="container mt-5">
+
+<div class="card shadow-lg">
+
+<div class="card-body">
+
+<h2 class="text-center mb-4">
+
+BLIP Multimodal Assistant
+
+</h2>
+
+<hr>
+
+<h4 class="text-primary">
+
+Upload Image
+
+</h4>
+
+<form
+action="/upload"
+method="POST"
+enctype="multipart/form-data"
+onsubmit="showLoader()">
+
+<div class="mb-3">
+
+<input
+type="file"
+name="image"
+class="form-control"
+required>
+
+</div>
+
+<div class="text-center">
+
+<button
+type="submit"
+class="btn btn-primary">
+
+Upload Image
+
+</button>
+
+</div>
+
+<h5 class="mt-3">
+
+</h5>
+
+</div>
+
+</form>
+
+<div class="spinner" id="loading" style="display:none;">
+
+    <div class="loader"></div>
+
+    <h5 class="mt-3">
+        🤖 VisionIQ is analyzing the image...
+    </h5>
+
+</div>
+
+{% if image_path %}
+
+<div class="text-center">
+
+<img
+src="{{ image_path }}"
+class="img-fluid rounded shadow"
+style="max-height:400px;">
+
+</div>
+
+{% endif %}
+
+{% if caption %}
+
+<div class="alert alert-primary mt-4">
+
+<h4>
+
+Caption
+
+</h4>
+
+<p>
+
+{{caption}}
+
+</p>
+
+</div>
+
+{% endif %}
+
+{% if image_path %}
+
+<hr>
+
+<h4 class="text-success">
+
+Ask Question
+
+</h4>
+
+<form
+action="/ask"
+method="POST">
+
+<div class="input-group mb-3">
+
+<input
+
+type="text"
+
+id="question"
+
+name="question"
+
+class="form-control"
+
+placeholder="Ask anything about the uploaded image..."
+
+required>
+
+<button
+
+type="button"
+
+class="btn btn-warning"
+
+onclick="startRecognition()">
+
+🎤
+
+</button>
+
+<button
+
+type="submit"
+
+class="btn btn-success">
+
+Ask
+
+</button>
+
+</div>
+
+</form>
+
+{% endif %}
+
+{% if chat %}
+
+<hr>
+
+<h3>
+
+Conversation
+
+</h3>
+
+{% for item in chat %}
+
+<div class="card mt-3">
+
+<div class="card-body">
+
+<h5>
+
+👤 You
+
+</h5>
+
+<p>
+
+{{ item.question }}
+
+</p>
+
+<hr>
+
+<h5>
+
+🤖 VisionIQ
+
+</h5>
+
+<p class="answer-text">
+{{ item.answer }}
+</p>
+
+
+🔊 Speak
+
+</button>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+{% endif %}
+
+{% if confidence %}
+
+<div class="mt-4">
+
+<h5>
+
+Confidence : {{ confidence }}%
+
+</h5>
+
+<div class="progress">
+
+<div
+
+class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+
+role="progressbar"
+
+style="width: {{ confidence }}%;">
+
+{{ confidence }}%
+
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
+
+{% if chat %}
+
+<div class="text-center mt-4">
+
+<button
+class="btn btn-outline-primary mt-2"
+type="button"
+onclick="speakThis(this)">
+
+🔊 Speak
+
+</button>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</div>
+
+</div>
+
+<footer class="bg-dark text-white text-center mt-5 p-3">
+
+VisionIQ AI © 2026
+
+</footer>
+
+<script>
+
+
+document.getElementById("loading").style.display="block";
+function showLoader(){
+
+    document.getElementById("loading").classList.remove("d-none");
+
+}
+
+window.addEventListener("load", function(){
+
+    document.getElementById("loading").classList.add("d-none");
+
+});
+
+function speakThis(button){
+
+    window.speechSynthesis.cancel();
+
+    let answer =
+        button.previousElementSibling.innerText;
+
+    let speech =
+        new SpeechSynthesisUtterance(answer);
+
+    speech.lang="en-US";
+    speech.rate=1;
+    speech.pitch=1;
+
+    window.speechSynthesis.speak(speech);
+
+}
+
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+
+</body>
+
+</html>
