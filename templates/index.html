@@ -17,6 +17,9 @@
 
 </head>
 
+
+
+
 <body>
 
 <nav class="navbar navbar-dark bg-dark">
@@ -210,50 +213,52 @@ Ask
 
 <hr>
 
-<h3>
-
-Conversation
-
-</h3>
+<h3>Conversation</h3>
 
 {% for item in chat %}
 
 <div class="card mt-3">
 
-<div class="card-body">
+    <div class="card-body">
 
-<h5>
+        <div class="user-card p-3 rounded">
 
-👤 You
+            <h5>👤 You</h5>
 
-</h5>
+            <p>{{ item.question }}</p>
 
-<p>
+        </div>
 
-{{ item.question }}
+        <div class="ai-card p-3 rounded mt-3">
 
+            <h5>🤖 VisionIQ</h5>
+
+            <p class="answer-text"
+   data-answer="{{ item.answer }}">
 </p>
 
-<hr>
-
-<h5>
-
-🤖 VisionIQ
-
-</h5>
-
-<p class="answer-text">
-{{ item.answer }}
-</p>
-
+            <button
+type="button"
+class="btn btn-primary btn-sm mt-2"
+data-answer="{{ item.answer }}"
+onclick="speakThis(this)">
 
 🔊 Speak
 
 </button>
 
-</div>
+            <button
+                type="button"
+                class="btn btn-success btn-sm mt-2 ms-2"
+                onclick="copyAnswer(this)">
+                📋 Copy
+            </button>
 
-</div>
+        </div>
+
+    </div>
+    </div>
+    </div>
 
 {% endfor %}
 
@@ -289,22 +294,7 @@ style="width: {{ confidence }}%;">
 
 {% endif %}
 
-{% if chat %}
 
-<div class="text-center mt-4">
-
-<button
-class="btn btn-outline-primary mt-2"
-type="button"
-onclick="speakThis(this)">
-
-🔊 Speak
-
-</button>
-
-</div>
-
-{% endif %}
 
 </div>
 
@@ -321,16 +311,15 @@ VisionIQ AI © 2026
 <script>
 
 
-document.getElementById("loading").style.display="block";
 function showLoader(){
 
-    document.getElementById("loading").classList.remove("d-none");
+    document.getElementById("loading").style.display="block";
 
 }
 
 window.addEventListener("load", function(){
 
-    document.getElementById("loading").classList.add("d-none");
+    document.getElementById("loading").style.display="none";
 
 });
 
@@ -338,11 +327,9 @@ function speakThis(button){
 
     window.speechSynthesis.cancel();
 
-    let answer =
-        button.previousElementSibling.innerText;
-
-    let speech =
-        new SpeechSynthesisUtterance(answer);
+    const speech = new SpeechSynthesisUtterance(
+        button.dataset.answer
+    );
 
     speech.lang="en-US";
     speech.rate=1;
@@ -353,9 +340,84 @@ function speakThis(button){
 }
 
 
+function copyAnswer(button){
+
+    const text=button.parentElement.querySelector(".answer-text").innerText;
+
+    navigator.clipboard.writeText(text);
+
+    button.innerHTML="✅ Copied";
+
+    setTimeout(function(){
+
+        button.innerHTML="📋 Copy";
+
+    },1500);
+
+}
+
+
+window.addEventListener("load", function(){
+
+    const answers = document.querySelectorAll(".answer-text");
+
+    answers.forEach(function(answer){
+
+        const text = answer.dataset.answer;
+
+        answer.innerHTML = "";
+
+        let i = 0;
+
+        const cursor = document.createElement("span");
+        cursor.className = "cursor";
+        answer.appendChild(cursor);
+
+        function type(){
+
+            if(i < text.length){
+
+                cursor.insertAdjacentText(
+                    "beforebegin",
+                    text.charAt(i)
+                );
+
+                i++;
+
+                setTimeout(type,25);
+
+            }else{
+
+                cursor.remove();
+
+            }
+
+        }
+
+        type();
+
+    });
+
+});
+
+
+window.addEventListener("load",function(){
+
+let q=document.getElementById("question");
+
+if(q){
+
+q.focus();
+
+}
+
+});
+
+
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 
 
 

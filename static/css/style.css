@@ -140,6 +140,38 @@ margin-top:20px;
     vertical-align:middle;
 }
 
+.user-card{
+    background:#e3f2fd;
+    border-left:5px solid #2196f3;
+}
+
+.ai-card{
+    background:#f8f9fa;
+    border-left:5px solid #28a745;
+}
+
+.answer-text{
+    font-size:17px;
+    white-space:pre-wrap;
+}
+
+.cursor{
+    display:inline-block;
+    width:2px;
+    height:18px;
+    background:black;
+    margin-left:2px;
+    animation:blink .8s infinite;
+}
+
+@keyframes blink{
+
+    50%{
+        opacity:0;
+    }
+
+}
+
 .history-img{
     width:120px;
     border-radius:10px;
