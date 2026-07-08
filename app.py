@@ -7,6 +7,19 @@ from transformers import (
     BlipForQuestionAnswering
 )
 
+from ultralytics import YOLO
+from collections import Counter
+
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+from compare import compare_images
+import os
+import uuid
+import re
+import cv2
+import easyocr
 import torch
 import os
 import sqlite3
@@ -19,11 +32,21 @@ app.secret_key = "visioniq_secret_key"
 
 CHAT_LIMIT = 20
 
+
+embedding_model = SentenceTransformer(
+    "all-MiniLM-L6-v2"
+)
+
 UPLOAD_FOLDER = "static/uploads"
 REPORT_FOLDER = "static/reports"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(REPORT_FOLDER, exist_ok=True)
+
+RESULT_FOLDER = "static/results"
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -48,6 +71,9 @@ vqa_processor = BlipProcessor.from_pretrained(
 vqa_model = BlipForQuestionAnswering.from_pretrained(
     "Salesforce/blip-vqa-base"
 ).to(device)
+
+reader = easyocr.Reader(['en'], gpu=torch.cuda.is_available())
+yolo_model = YOLO("yolov8n.pt")
 
 print("Models Loaded Successfully")
 
@@ -146,6 +172,33 @@ def create_pdf(image, caption, question, answer):
 
     return pdf_name
 
+def answer_from_ocr(question, ocr_text):
+
+    lines = [
+        line.strip()
+        for line in ocr_text.split("\n")
+        if line.strip()
+    ]
+
+    if not lines:
+        return None
+
+    question_embedding = embedding_model.encode([question])
+
+    line_embeddings = embedding_model.encode(lines)
+
+    similarity = cosine_similarity(
+        question_embedding,
+        line_embeddings
+    )[0]
+
+    best_index = similarity.argmax()
+
+    if similarity[best_index] > 0.30:
+        return lines[best_index]
+
+    return None
+
 
 @app.route("/")
 def home():
@@ -158,7 +211,9 @@ def home():
 
     caption=session.get("caption"),
 
+    ocr_text=session.get("ocr_text"),
     confidence=session.get("confidence",0),
+    objects=session.get("objects"),
 
     chat=session.get("chat",[])
 
@@ -205,6 +260,32 @@ def upload():
 
     image=Image.open(image_path).convert("RGB")
 
+    results = yolo_model(image_path)
+
+    objects = []
+
+    for result in results:
+
+        for box in result.boxes:
+
+            class_id = int(box.cls[0])
+
+            class_name = yolo_model.names[class_id]
+
+            objects.append(class_name)
+
+    object_counts = dict(Counter(objects))
+    # OCR
+
+    img = cv2.imread(image_path)
+
+    ocr_result = reader.readtext(img)
+
+    detected_text = ""
+
+    for item in ocr_result:
+        detected_text += item[1] + "\n"
+
     inputs=caption_processor(
         images=image,
         return_tensors="pt"
@@ -219,6 +300,8 @@ def upload():
 
     session["image_path"]=image_path
     session["caption"]=caption
+    session["ocr_text"] = detected_text
+    session["objects"] = object_counts
     session["chat"]=[]
     session["answer"]=""
     session["confidence"]=0
@@ -235,22 +318,39 @@ def ask():
         return redirect("/")
 
     question = request.form.get("question")
+    question_lower = question.lower()
+
+    ocr_text = session.get("ocr_text", "")
 
     image = Image.open(image_path).convert("RGB")
 
-    inputs = vqa_processor(
-        image,
-        question,
-        return_tensors="pt"
-    ).to(device)
+    answer = None
 
-    with torch.no_grad():
-        outputs = vqa_model.generate(**inputs)
+    # ---------------- OCR ----------------
 
-    answer = vqa_processor.decode(
-        outputs[0],
-        skip_special_tokens=True
-    )
+    answer = None
+
+    if ocr_text:
+
+        answer = answer_from_ocr(question, ocr_text)
+
+    # ---------------- BLIP VQA ----------------
+
+    if answer is None:
+
+        inputs = vqa_processor(
+            image,
+            question,
+            return_tensors="pt"
+        ).to(device)
+
+        with torch.no_grad():
+            outputs = vqa_model.generate(**inputs)
+
+        answer = vqa_processor.decode(
+            outputs[0],
+            skip_special_tokens=True
+        )
 
     confidence = 100
 
@@ -276,7 +376,6 @@ def ask():
     session["confidence"] = confidence
 
     return redirect("/")
-
 
 
 @app.route("/download")
@@ -316,6 +415,46 @@ def download():
         pdf,
         as_attachment=True
     )
+
+@app.route("/compare", methods=["GET", "POST"])
+def compare():
+
+    if request.method == "POST":
+
+        if "image1" not in request.files or "image2" not in request.files:
+            return "Please upload two images."
+
+        img1 = request.files["image1"]
+        img2 = request.files["image2"]
+
+        if img1.filename == "" or img2.filename == "":
+            return "Please choose both images."
+
+        filename1 = str(uuid.uuid4()) + "_" + img1.filename
+        filename2 = str(uuid.uuid4()) + "_" + img2.filename
+
+        path1 = os.path.join(UPLOAD_FOLDER, filename1)
+        path2 = os.path.join(UPLOAD_FOLDER, filename2)
+
+        img1.save(path1)
+        img2.save(path2)
+
+        result = compare_images(path1, path2)
+
+        return render_template(
+            "compare.html",
+            image1=result["image1"],
+            image2=result["image2"],
+            report=result["report"]
+        )
+
+    return render_template(
+        "compare.html",
+        image1=None,
+        image2=None,
+        report=None
+    )
+
 
 
 if __name__ == "__main__":

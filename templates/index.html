@@ -46,6 +46,16 @@ Download PDF
 
 </a>
 
+<h1>VisionIQ AI</h1>
+
+<a href="/">Home</a>
+
+<a href="/history">History</a>
+
+<a href="/compare">
+    Compare Images
+</a>
+
 </div>
 
 </div>
@@ -150,6 +160,62 @@ Caption
 </div>
 
 {% endif %}
+
+{% if ocr_text %}
+
+<div class="alert alert-warning mt-4">
+
+<h4>📝 Detected Text</h4>
+
+<pre>{{ ocr_text }}</pre>
+
+</div>
+
+{% endif %}
+
+
+{% if objects %}
+
+<div class="alert alert-info mt-4">
+
+<h4>📦 Detected Objects</h4>
+
+<table class="table table-bordered">
+
+<thead>
+
+<tr>
+
+<th>Object</th>
+
+<th>Count</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for object, count in objects.items() %}
+
+<tr>
+
+<td>{{ object }}</td>
+
+<td>{{ count }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endif %}
+
 
 {% if image_path %}
 
@@ -307,6 +373,8 @@ style="width: {{ confidence }}%;">
 VisionIQ AI © 2026
 
 </footer>
+
+
 
 <script>
 
