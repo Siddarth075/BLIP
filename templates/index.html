@@ -11,76 +11,52 @@
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5">
 <script src="{{ url_for('static',filename='js/speech.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/annotate.js') }}"></script>
 
 </head>
 
 
-
-
 <body>
 
-<nav class="navbar navbar-dark bg-dark">
-
+<nav class="navbar navbar-dark">
 <div class="container">
 
-<a class="navbar-brand fw-bold">
+<a class="navbar-brand"><span class="dot"></span>VisionIQ AI</a>
 
-VisionIQ AI
-
-</a>
-
-<div>
-
-<a href="/history" class="btn btn-warning">
-
-History
-
-</a>
-
-<a href="/download" class="btn btn-success">
-
-Download PDF
-
-</a>
-
-<h1>VisionIQ AI</h1>
-
+<div class="nav-links">
 <a href="/">Home</a>
-
-<a href="/history">History</a>
-
-<a href="/compare">
-    Compare Images
-</a>
-
+<a href="/compare">Compare Images</a>
+<a href="/history" class="btn-scan amber">History</a>
+<a href="/download" class="btn-scan">Download PDF</a>
 </div>
 
 </div>
-
 </nav>
 
-<div class="container mt-5">
+<div class="container mt-4">
 
-<div class="card shadow-lg">
+<div class="card viewfinder">
 
 <div class="card-body">
 
-<h2 class="text-center mb-4">
+<div class="panel-head">
+<div>
+<span class="eyebrow">Model // BLIP-Base + YOLOv8 + OCR</span>
+<h2>BLIP Multimodal Assistant</h2>
+</div>
+<span class="status-pill"><span class="blip"></span>Ready</span>
+</div>
 
-BLIP Multimodal Assistant
+<div class="dropzone viewfinder">
 
-</h2>
-
-<hr>
-
-<h4 class="text-primary">
-
-Upload Image
-
-</h4>
+<label class="eyebrow">Upload Image</label>
 
 <form
 action="/upload"
@@ -98,74 +74,70 @@ required>
 
 </div>
 
+
+
 <div class="text-center">
 
 <button
 type="submit"
 class="btn btn-primary">
 
-Upload Image
+Analyze Image
 
 </button>
 
 </div>
 
-<h5 class="mt-3">
-
-</h5>
+</form>
 
 </div>
-
-</form>
 
 <div class="spinner" id="loading" style="display:none;">
 
     <div class="loader"></div>
 
     <h5 class="mt-3">
-        🤖 VisionIQ is analyzing the image...
+        Running caption / OCR / object detection&hellip;
     </h5>
 
 </div>
 
 {% if image_path %}
 
-<div class="text-center">
+<div class="text-center mt-4">
 
+<div class="image-stage viewfinder d-inline-block">
 <img
 src="{{ image_path }}"
 class="img-fluid rounded shadow"
-style="max-height:400px;">
+style="max-width:100%; max-height:650px;"
+</div>
+<a href="/annotate" class="btn btn-primary">
+    🖍️ Annotate Image
+</a>
+
 
 </div>
 
 {% endif %}
 
-{% if caption %}
+<div class="readout caption">
 
-<div class="alert alert-primary mt-4">
+<h4>Caption Output</h4>
 
-<h4>
+<p style="color:white;font-size:20px;">
 
-Caption
-
-</h4>
-
-<p>
-
-{{caption}}
+Caption = {{ caption }}
 
 </p>
 
 </div>
 
-{% endif %}
-
 {% if ocr_text %}
 
-<div class="alert alert-warning mt-4">
+<div class="readout ocr">
 
-<h4>📝 Detected Text</h4>
+<h4>Detected Text // OCR Stream</h4>
 
 <pre>{{ ocr_text }}</pre>
 
@@ -176,11 +148,11 @@ Caption
 
 {% if objects %}
 
-<div class="alert alert-info mt-4">
+<div class="readout objects">
 
-<h4>📦 Detected Objects</h4>
+<h4>Object Detection</h4>
 
-<table class="table table-bordered">
+<table class="obj-table">
 
 <thead>
 
@@ -200,7 +172,7 @@ Caption
 
 <tr>
 
-<td>{{ object }}</td>
+<td><span class="dot"></span>{{ object }}</td>
 
 <td>{{ count }}</td>
 
@@ -219,19 +191,17 @@ Caption
 
 {% if image_path %}
 
-<hr>
+<div class="readout" style="--accent:var(--teal); margin-top:2rem;">
 
-<h4 class="text-success">
-
-Ask Question
-
-</h4>
+<h4>Ask A Question</h4>
 
 <form
 action="/ask"
 method="POST">
 
-<div class="input-group mb-3">
+<div class="ask-row">
+
+<span class="prompt-mark">&gt;</span>
 
 <input
 
@@ -255,7 +225,7 @@ class="btn btn-warning"
 
 onclick="startRecognition()">
 
-🎤
+&#127908;
 
 </button>
 
@@ -273,56 +243,63 @@ Ask
 
 </form>
 
+</div>
+
 {% endif %}
 
 {% if chat %}
 
-<hr>
-
-<h3>Conversation</h3>
+<div class="mt-4">
+<span class="eyebrow">Conversation Log</span>
+</div>
 
 {% for item in chat %}
 
-<div class="card mt-3">
+<div class="card msg-card mt-3">
 
     <div class="card-body">
 
-        <div class="user-card p-3 rounded">
+        <div class="user-card">
 
-            <h5>👤 You</h5>
+    <span class="msg-tag">You</span>
 
-            <p>{{ item.question }}</p>
+    <p class="question-text mb-0">
+        {{ item.question }}
+    </p>
 
-        </div>
+</div>
 
-        <div class="ai-card p-3 rounded mt-3">
+        <div class="ai-card">
 
-            <h5>🤖 VisionIQ</h5>
+            <span class="msg-tag">VisionIQ</span>
 
-            <p class="answer-text"
-   data-answer="{{ item.answer }}">
+<p
+class="answer-text mb-2"
+data-answer="{{ item.answer }}">
+
+{{ item.answer }}
+
 </p>
 
             <button
 type="button"
-class="btn btn-primary btn-sm mt-2"
+class="btn btn-primary btn-sm mt-1"
 data-answer="{{ item.answer }}"
 onclick="speakThis(this)">
 
-🔊 Speak
+&#128266; Speak
 
 </button>
 
             <button
                 type="button"
-                class="btn btn-success btn-sm mt-2 ms-2"
+                class="btn btn-success btn-sm mt-1 ms-2"
                 onclick="copyAnswer(this)">
-                📋 Copy
+                &#128203; Copy
             </button>
 
         </div>
 
-    </div>
     </div>
     </div>
 
@@ -334,23 +311,15 @@ onclick="speakThis(this)">
 
 <div class="mt-4">
 
-<h5>
+<div class="meter-label">Confidence &mdash; {{ confidence }}%</div>
 
-Confidence : {{ confidence }}%
-
-</h5>
-
-<div class="progress">
+<div class="meter">
 
 <div
 
-class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-
-role="progressbar"
+class="meter-fill"
 
 style="width: {{ confidence }}%;">
-
-{{ confidence }}%
 
 </div>
 
@@ -368,9 +337,9 @@ style="width: {{ confidence }}%;">
 
 </div>
 
-<footer class="bg-dark text-white text-center mt-5 p-3">
+<footer class="text-center mt-5 p-3">
 
-VisionIQ AI © 2026
+VisionIQ AI &copy; 2026
 
 </footer>
 
@@ -385,11 +354,7 @@ function showLoader(){
 
 }
 
-window.addEventListener("load", function(){
 
-    document.getElementById("loading").style.display="none";
-
-});
 
 function speakThis(button){
 
@@ -414,11 +379,11 @@ function copyAnswer(button){
 
     navigator.clipboard.writeText(text);
 
-    button.innerHTML="✅ Copied";
+    button.innerHTML="&#9989; Copied";
 
     setTimeout(function(){
 
-        button.innerHTML="📋 Copy";
+        button.innerHTML="&#128203; Copy";
 
     },1500);
 
@@ -431,7 +396,7 @@ window.addEventListener("load", function(){
 
     answers.forEach(function(answer){
 
-        const text = answer.dataset.answer;
+        const text = answer.dataset.answer || answer.textContent;
 
         answer.innerHTML = "";
 

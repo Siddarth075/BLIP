@@ -1,270 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisionIQ AI - Image Comparison</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<title>VisionIQ AI - Image Comparison</title>
 
-    <style>
-        body{
-            background:#f4f7fb;
-        }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-        .container-box{
-            max-width:1200px;
-            margin:auto;
-            margin-top:30px;
-        }
+<style>
 
-        .card{
-            border:none;
-            border-radius:15px;
-            box-shadow:0 0 12px rgba(0,0,0,.15);
-        }
+body{
+    background:#f4f7fb;
+}
 
-        img{
-            width:100%;
-            border-radius:10px;
-        }
+.container-box{
+    max-width:1200px;
+    margin:auto;
+    margin-top:30px;
+}
 
-        h2{
-            text-align:center;
-            margin-bottom:25px;
-        }
+.card{
+    border:none;
+    border-radius:15px;
+    box-shadow:0 0 10px rgba(0,0,0,.15);
+}
 
-        ul{
-            list-style:none;
-            padding-left:0;
-        }
+img{
+    width:100%;
+    border-radius:10px;
+}
 
-        li{
-            margin-bottom:8px;
-        }
-    </style>
+h2{
+    text-align:center;
+}
+
+ul{
+    list-style:none;
+    padding-left:0;
+}
+
+li{
+    padding:6px;
+}
+
+</style>
+
 </head>
 
 <body>
 
 <div class="container container-box">
 
-    <div class="card p-4">
+<div class="card p-4">
 
-        <h2>VisionIQ AI - Image Comparison</h2>
+<h2>VisionIQ AI - Image Comparison</h2>
 
-        <form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data">
 
-            <div class="row">
+<div class="row">
 
-                <div class="col-md-6">
+<div class="col-md-6">
 
-                    <label class="form-label">
-                        Select First Image
-                    </label>
+<label class="form-label">
+First Image
+</label>
 
-                    <input
-                        type="file"
-                        class="form-control"
-                        name="image1"
-                        required>
+<input
+type="file"
+name="image1"
+class="form-control"
+required>
 
-                </div>
+</div>
 
-                <div class="col-md-6">
+<div class="col-md-6">
 
-                    <label class="form-label">
-                        Select Second Image
-                    </label>
+<label class="form-label">
+Second Image
+</label>
 
-                    <input
-                        type="file"
-                        class="form-control"
-                        name="image2"
-                        required>
+<input
+type="file"
+name="image2"
+class="form-control"
+required>
 
-                </div>
+</div>
 
-            </div>
+</div>
 
-            <div class="text-center mt-4">
+<div class="text-center mt-4">
 
-                <button class="btn btn-primary btn-lg">
-                    Compare Images
-                </button>
+<button class="btn btn-primary btn-lg">
 
-                <a href="/" class="btn btn-secondary btn-lg">
-                    Home
-                </a>
+Compare Images
 
-            </div>
+</button>
 
-        </form>
+<a
+href="/"
+class="btn btn-secondary btn-lg">
 
-    </div>
+Home
 
-    {% if report %}
+</a>
 
-    <div class="row mt-5">
+</div>
 
-        <div class="col-md-6">
+</form>
 
-            <div class="card p-3">
+</div>
 
-                <h4 class="text-center">
-                    Image 1
-                </h4>
+{% if report %}
 
-                <img src="/{{ image1 }}">
+<div class="card p-4 mt-4">
 
-            </div>
+<h3 class="text-center">
 
-        </div>
+Comparison Report
 
-        <div class="col-md-6">
+</h3>
 
-            <div class="card p-3">
+<hr>
 
-                <h4 class="text-center">
-                    Image 2
-                </h4>
+<div class="row">
 
-                <img src="/{{ image2 }}">
+<div class="col-md-6">
 
-            </div>
+<h5>
 
-        </div>
+Total Objects
 
-    </div>
+</h5>
 
-    <div class="card p-4 mt-4">
+<p>
 
-        <h3 class="text-center mb-4">
-            Comparison Report
-        </h3>
+Image 1 :
 
-        <div class="row">
+<strong>
 
-            <div class="col-md-6">
+{{ report.total_image1 }}
 
-                <h5>Total Objects</h5>
+</strong>
 
-                <p>
-                    Image 1 :
-                    <strong>{{ report.total_image1 }}</strong>
-                </p>
+</p>
 
-                <p>
-                    Image 2 :
-                    <strong>{{ report.total_image2 }}</strong>
-                </p>
+<p>
 
-            </div>
+Image 2 :
 
-            <div class="col-md-6">
+<strong>
 
-                <h5>Summary</h5>
+{{ report.total_image2 }}
 
-                <p>
-                    Common :
-                    <strong>{{ report.common|length }}</strong>
-                </p>
+</strong>
 
-                <p>
-                    Missing :
-                    <strong>{{ report.removed|length }}</strong>
-                </p>
+</p>
 
-                <p>
-                    New :
-                    <strong>{{ report.added|length }}</strong>
-                </p>
+</div>
 
-            </div>
+<div class="col-md-6">
 
-        </div>
+<h5>
 
-        <hr>
+Summary
 
-        <div class="row">
+</h5>
 
-            <div class="col-md-4">
+<p>
 
-                <h4 class="text-success">
-                    Common Objects
-                </h4>
+Common :
 
-                <ul>
+<strong>
 
-                    {% for obj in report.common %}
+{{ report.common|length }}
 
-                    <li>
-                        ✅ {{ obj }}
-                    </li>
+</strong>
 
-                    {% else %}
+</p>
 
-                    <li>No common objects.</li>
+<p>
 
-                    {% endfor %}
+Missing :
 
-                </ul>
+<strong>
 
-            </div>
+{{ report.removed|length }}
 
-            <div class="col-md-4">
+</strong>
 
-                <h4 class="text-danger">
-                    Missing Objects
-                </h4>
+</p>
 
-                <ul>
+<p>
 
-                    {% for obj in report.removed %}
+New :
 
-                    <li>
-                        ❌ {{ obj }}
-                    </li>
+<strong>
 
-                    {% else %}
+{{ report.added|length }}
 
-                    <li>No missing objects.</li>
+</strong>
 
-                    {% endfor %}
+</p>
 
-                </ul>
+</div>
 
-            </div>
+</div>
 
-            <div class="col-md-4">
+<hr>
 
-                <h4 class="text-primary">
-                    New Objects
-                </h4>
+<div class="row">
 
-                <ul>
+<div class="col-md-6">
 
-                    {% for obj in report.added %}
+<h4 class="text-center">
 
-                    <li>
-                        🆕 {{ obj }}
-                    </li>
+Compared Image 1
 
-                    {% else %}
+</h4>
 
-                    <li>No new objects.</li>
+<img src="/{{ image1 }}">
 
-                    {% endfor %}
+</div>
 
-                </ul>
+<div class="col-md-6">
 
-            </div>
+<h4 class="text-center">
 
-        </div>
+Compared Image 2
 
-    </div>
+</h4>
 
-    {% endif %}
+<img src="/{{ image2 }}">
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="row">
+
+<div class="col-md-4">
+
+<h4 class="text-success">
+
+Common Objects
+
+</h4>
+
+<ul>
+
+{% for obj in report.common %}
+
+<li>
+
+✅ {{ obj }}
+
+</li>
+
+{% else %}
+
+<li>
+
+No common objects.
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+</div>
+
+<div class="col-md-4">
+
+<h4 class="text-danger">
+
+Missing Objects
+
+</h4>
+
+<ul>
+
+{% for obj in report.removed %}
+
+<li>
+
+❌ {{ obj }}
+
+</li>
+
+{% else %}
+
+<li>
+
+No missing objects.
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+</div>
+
+<div class="col-md-4">
+
+<h4 class="text-primary">
+
+New Objects
+
+</h4>
+
+<ul>
+
+{% for obj in report.added %}
+
+<li>
+
+🆕 {{ obj }}
+
+</li>
+
+{% else %}
+
+<li>
+
+No new objects.
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
 
 </div>
 

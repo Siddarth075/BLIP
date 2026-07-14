@@ -3,7 +3,7 @@ import cv2
 import os
 import uuid
 
-model = YOLO("models/yolov8n.pt")
+model = YOLO("yolov8n.pt")
 
 
 def detect_objects(image_path):

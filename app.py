@@ -22,7 +22,7 @@ import cv2
 import easyocr
 import torch
 import os
-import sqlite3
+from pymongo import MongoClient
 from datetime import datetime
 from reportlab.pdfgen import canvas
 
@@ -77,56 +77,36 @@ yolo_model = YOLO("yolov8n.pt")
 
 print("Models Loaded Successfully")
 
-DB = "history.db"
 
-conn = sqlite3.connect(DB)
+# ---------------- MongoDB ----------------
 
-cursor = conn.cursor()
+client = MongoClient("mongodb://localhost:27017/")
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS history(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-image TEXT,
-caption TEXT,
-question TEXT,
-answer TEXT,
-confidence REAL,
-date TEXT
-)
-""")
+db = client["visioniq_ai"]
 
-conn.commit()
-conn.close()
+history_collection = db["history"]
 
+print("MongoDB Connected Successfully")
 
 
 
 def save_history(image, caption, question, answer, confidence):
 
-    conn = sqlite3.connect(DB)
+    history_collection.insert_one({
 
-    cursor = conn.cursor()
+        "image": image,
 
-    cursor.execute(
-        """
-        INSERT INTO history
-        (image,caption,question,answer,confidence,date)
+        "caption": caption,
 
-        VALUES(?,?,?,?,?,?)
-        """,
-        (
-            image,
-            caption,
-            question,
-            answer,
-            confidence,
-            datetime.now().strftime("%d-%m-%Y %H:%M")
-        )
-    )
+        "question": question,
 
-    conn.commit()
+        "answer": answer,
 
-    conn.close()
+        "confidence": confidence,
+
+        "date": datetime.now()
+
+    })
 
 
 def create_pdf(image, caption, question, answer):
@@ -223,17 +203,24 @@ def home():
 @app.route("/history")
 def history():
 
-    conn = sqlite3.connect(DB)
-
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT * FROM history ORDER BY id DESC"
+    records = list(
+        history_collection.find().sort("date", -1)
     )
 
-    data = cursor.fetchall()
+    data = []
 
-    conn.close()
+    for record in records:
+
+        data.append((
+            str(record.get("_id")),
+            record.get("image", ""),
+            record.get("caption", ""),
+            record.get("question", ""),
+            record.get("answer", ""),
+            record.get("confidence", 0),
+            record.get("date").strftime("%d-%m-%Y %H:%M")
+            if record.get("date") else ""
+        ))
 
     return render_template(
         "history.html",
@@ -293,13 +280,19 @@ def upload():
 
     output=caption_model.generate(**inputs)
 
-    caption=caption_processor.decode(
+    caption = caption_processor.decode(
         output[0],
         skip_special_tokens=True
-    )
+    ).strip()
+
+    print("Generated Caption:", repr(caption))
+    print("Caption:", caption)
+    print("OCR:", detected_text)
+    print("Objects:", object_counts)
 
     session["image_path"]=image_path
     session["caption"]=caption
+    print("Session Caption:", session["caption"])
     session["ocr_text"] = detected_text
     session["objects"] = object_counts
     session["chat"]=[]
@@ -369,6 +362,15 @@ def ask():
         "answer": answer
     })
 
+    print("================================")
+    print("Question:", question)
+    print("Answer:", repr(answer))
+    print("Chat:", chat)
+    print("================================")
+
+    print("Answer:", answer)
+    print("Chat:", chat)
+
     if len(chat) > CHAT_LIMIT:
         chat.pop(0)
 
@@ -378,37 +380,100 @@ def ask():
     return redirect("/")
 
 
+
+@app.route("/crop_region", methods=["POST"])
+def crop_region():
+
+    image_path = session.get("image_path")
+
+    if image_path is None:
+        return redirect("/")
+
+    print(request.form)
+    x = int(request.form["x"])
+    y = int(request.form["y"])
+    w = int(request.form["w"])
+    h = int(request.form["h"])
+
+    image = cv2.imread(image_path)
+
+    cropped = image[y:y+h, x:x+w]
+
+    filename = str(uuid.uuid4()) + ".jpg"
+
+    save_path = os.path.join(
+        "static",
+        "results",
+        filename
+    )
+
+    cv2.imwrite(save_path, cropped)
+
+    return render_template(
+    "region_vqa.html",
+    image="results/" + filename,
+    answer=None
+)
+
+@app.route("/region_ask", methods=["POST"])
+def region_ask():
+
+    image = request.form["image"]
+    question = request.form["question"]
+
+    image_path = os.path.join("static", image)
+
+    raw_image = Image.open(image_path).convert("RGB")
+
+    inputs = vqa_processor(
+        raw_image,
+        question,
+        return_tensors="pt"
+    ).to(device)
+
+    with torch.no_grad():
+        output = vqa_model.generate(**inputs)
+
+    answer = vqa_processor.decode(
+        output[0],
+        skip_special_tokens=True
+    )
+
+    return render_template(
+        "region_vqa.html",
+        image=image,
+        answer=answer
+    )
+
+
+@app.route("/annotate")
+def annotate():
+
+    image_path = session.get("image_path")
+
+    if image_path is None:
+        return redirect("/")
+
+    return render_template(
+        "annotate.html",
+        image_path="/" + image_path.replace("\\","/")
+    )
+
 @app.route("/download")
 def download():
 
-    conn = sqlite3.connect(DB)
-
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        SELECT image,
-               caption,
-               question,
-               answer
-        FROM history
-        ORDER BY id DESC
-        LIMIT 1
-        """
+    row = history_collection.find_one(
+        sort=[("date", -1)]
     )
-
-    row = cursor.fetchone()
-
-    conn.close()
 
     if row is None:
         return "No Report"
 
     pdf = create_pdf(
-        row[0],
-        row[1],
-        row[2],
-        row[3]
+        row.get("image", ""),
+        row.get("caption", ""),
+        row.get("question", ""),
+        row.get("answer", "")
     )
 
     return send_file(
